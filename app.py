@@ -110,7 +110,7 @@ def getMessage_bot1():
 def webhook():
     bot1.remove_webhook()
     # Set your Flask app's URL directly
-    bot1.set_webhook(url='YOUR_FLASK_APP_URL/' + API_TOKEN_1)
+    bot1.set_webhook(url='https://images-search.onrender.com/' + API_TOKEN_1)
     return "Webhook set", 200
 
 if __name__ == "__main__":
