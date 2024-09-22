@@ -16,33 +16,38 @@ class ImageExtractor:
 
     def get_image_tags(self):
         image_urls = []
+
         if self.engine == 'google':
-            for img in self.soup.find_all('img'):
+            # General selector for Google image results
+            image_tags = self.soup.find_all('img')
+            for img in image_tags:
                 url = img.get('src')
                 if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
+
         elif self.engine == 'bing':
-            for img in self.soup.find_all('img'):
-                url = img.get('src')
-                if url and "w=600" in url and not url.startswith('data:image/') and len(image_urls) < 10:
-                    image_urls.append(url)
-        elif self.engine == 'yahoo':
-            for img in self.soup.find_all('img'):
+            image_tags = self.soup.find_all('img', class_='mimg')
+            for img in image_tags:
                 url = img.get('src')
                 if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
+
         elif self.engine == 'duckduckgo':
-            for img in self.soup.find_all('img'):
+            image_tags = self.soup.find_all('img', class_='tile--img__img')
+            for img in image_tags:
                 url = img.get('src')
                 if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
+
         elif self.engine == 'yandex':
-            for img in self.soup.find_all('img'):
+            image_tags = self.soup.find_all('img', class_='serp-item__thumb')
+            for img in image_tags:
                 url = img.get('src')
                 if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
 
         return image_urls
+
 
 def search_image(query, engine):
     search_engines = {
