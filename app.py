@@ -93,20 +93,29 @@ def search_image(query, engine):
 def send_welcome_bot1(message):
     bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find images.")
 
-@bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'yandex'])
-def image_search(message):
-    command = message.text.split()[0][1:]  # Get the engine name
-    query = " ".join(message.text.split()[1:])  # Get the search query
-    if not query:
-        bot1.reply_to(message, "Please provide a search query.")
-        return
+# Bot 1 commands and handlers
+@bot1.message_handler(commands=['start'])
+def send_welcome_bot1(message):
+    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, etc., followed by your search query to find images.")
 
-    images = search_image(query, command)
-    if images:
-        for img in images:
-            bot1.send_message(message.chat.id, img)
-    else:
-        bot1.reply_to(message, "No images found.")
+@bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'flickr', 'pixabay', 'pexels', 'unsplash', 'shutterstock', 'yandex'])
+def image_search(message):
+    try:
+        command = message.text.split(' ', 1)[0][1:]  # Extract the command without '/'
+        query = message.text.split(' ', 1)[1]
+        image_urls = search_image(query, command.lower())
+
+        if not image_urls:
+            bot1.send_message(message.chat.id, "No images found. Please try a different search query.")
+            return
+
+        for img_url in image_urls:
+            bot1.send_photo(message.chat.id, img_url)
+
+    except IndexError:
+        bot1.send_message(message.chat.id, "Please provide a search query after the command.")
+    except Exception as e:
+        bot1.send_message(message.chat.id, f"An error occurred: {str(e)}")
 
 @app.route('/' + API_TOKEN_1, methods=['POST'])
 def getMessage_bot1():
