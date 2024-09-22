@@ -10,42 +10,42 @@ bot1 = telebot.TeleBot(API_TOKEN_1)
 app = Flask(__name__)
 
 class ImageExtractor:
-    def __init__(self, html_content, engine):
-        self.soup = BeautifulSoup(html_content, 'html.parser')
-        self.engine = engine
+    def __init__(self, html_content, engine):
+        self.soup = BeautifulSoup(html_content, 'html.parser')
+        self.engine = engine
 
-    def get_image_tags(self):
-        image_tags = []
-        if self.engine == 'google':
-            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
-        elif self.engine == 'bing':
-            image_tags = self.soup.find_all('img', {'class': 'mimg'})
-        elif self.engine == 'yahoo':
-            image_tags = self.soup.find_all('img', {'class': 'process'})
-        elif self.engine == 'duckduckgo':
-            image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
-        elif self.engine == 'flickr':
-            image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
-        elif self.engine == 'pixabay':
-            image_tags = self.soup.find_all('img', {'class': 'preview'})
-        elif self.engine == 'pexels':
-            image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
-        elif self.engine == 'unsplash':
-            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
-        elif self.engine == 'shutterstock':
-            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
-        elif self.engine == 'yandex':
-            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
+    def get_image_tags(self):
+        image_tags = []
+        if self.engine == 'google':
+            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
+        elif self.engine == 'bing':
+            image_tags = self.soup.find_all('img', {'class': 'mimg'})
+        elif self.engine == 'yahoo':
+            image_tags = self.soup.find_all('img', {'class': 'process'})
+        elif self.engine == 'duckduckgo':
+            image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
+        elif self.engine == 'flickr':
+            image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
+        elif self.engine == 'pixabay':
+            image_tags = self.soup.find_all('img', {'class': 'preview'})
+        elif self.engine == 'pexels':
+            image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
+        elif self.engine == 'unsplash':
+            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
+        elif self.engine == 'shutterstock':
+            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
+        elif self.engine == 'yandex':
+            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
 
-        image_urls = []
-        for img in image_tags:
-            image_url = img.get('src') or img.get('data-src')
-            if image_url and len(image_urls) < 100:  # Limit to top 100 images
-                if not image_url.startswith('http'):
-                    image_url = "https:" + image_url
-                image_urls.append(image_url)
+        image_urls = []
+        for img in image_tags:
+            image_url = img.get('src') or img.get('data-src')
+            if image_url and len(image_urls) < 100:  # Limit to top 100 images
+                if not image_url.startswith('http'):
+                    image_url = "https:" + image_url
+                image_urls.append(image_url)
 
-        return image_urls
+        return image_urls
 
 
 
