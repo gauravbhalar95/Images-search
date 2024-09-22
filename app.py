@@ -18,19 +18,22 @@ class ImageExtractor:
         image_urls = []
 
         if self.engine == 'google':
-            # General selector for Google image results
             image_tags = self.soup.find_all('img')
             for img in image_tags:
                 url = img.get('src')
                 if url and not url.startswith('data:image/') and len(image_urls) < 10:
-                    image_urls.append(url)
+                    if 'http' in url:
+                        image_urls.append(url)
 
         elif self.engine == 'bing':
-            image_tags = self.soup.find_all('img', class_='mimg')
-            for img in image_tags:
-                url = img.get('src')
-                if url and not url.startswith('data:image/') and len(image_urls) < 10:
-                    image_urls.append(url)
+            image_tags = self.soup.find_all('a', {'class': 'iusc'})
+            for tag in image_tags:
+                img_url = tag.get('m')
+                if img_url:
+                    # Parse the JSON string to get the actual image URL
+                    img_info = json.loads(img_url)
+                    if img_info.get('murl'):
+                        image_urls.append(img_info['murl'])
 
         elif self.engine == 'duckduckgo':
             image_tags = self.soup.find_all('img', class_='tile--img__img')
@@ -47,6 +50,7 @@ class ImageExtractor:
                     image_urls.append(url)
 
         return image_urls
+
 
 
 def search_image(query, engine):
