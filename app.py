@@ -51,20 +51,34 @@ class ImageExtractor:
 
 def search_image(query, engine):
     search_engines = {
-        'google': f"https://www.google.com/search?hl=en&tbm=isch&q={query}",
-        'bing': f"https://www.bing.com/images/search?q={query}",
-        'yahoo': f"https://images.search.yahoo.com/search/images?p={query}",
-        'duckduckgo': f"https://duckduckgo.com/?q={query}&t=h_&iar=images&iax=images&ia=images",
-        'yandex': f"https://yandex.com/images/search?text={query}",
-    }
+                      'google': f"https://www.google.com/search?q={query}+&client=ms-android-samsung-ss&sca_esv=ec3eb9fcd9e1b35d&udm=2&biw=384&bih=729&sxsrf=ADLYWIKSFHY6SdMGsYC9iL70OTZLa8KzNw%3A1724849897556&ei=6R7PZpXVIa-q4-EPk5252A8&oq={query}+&gs_lp=EhNtb2JpbGUtZ3dzLXdpei1zZXJwIgxraW5qYWwgZGF2ZSAyChAAGIAEGEMYigUyChAAGIAEGEMYigUyChAAGIAEGEMYigUyBRAAGIAEMgoQABiABBhDGIoFSPKJAlCtOVitOXAEeACQAQCYAfACoAHsBaoBBzAuMi4wLjG4AQPIAQD4AQX4AQGYAgegAqMGwgIEEAAYA5gDAOIDBRIBMSBAiAYBkgcHNC4xLjEuMaAH4Ak&sclient=mobile-gws-wiz-serp",
+                      'bing': f"https://www.bing.com/images/search?q={query}",
+                      'yahoo': f"https://images.search.yahoo.com/search/images?p={query}",
+                      'duckduckgo': f"https://duckduckgo.com/?q={query}+&t=h_&iar=images&iax=images&ia=images",
+                      'flickr': f"https://www.flickr.com/search/?text={query}",
+                      'pixabay': f"https://pixabay.com/images/search/{query}/",
+                      'pexels': f"https://www.pexels.com/search/{query}/",
+                      'unsplash': f"https://unsplash.com/s/photos/{query}",
+                      'shutterstock': f"https://www.shutterstock.com/search/images?searchterm={query}",
+                      'yandex': f"https://yandex.com/images/touch/search?lr=10569&text={query}"
+         }
 
     if engine not in search_engines:
         return []
 
     url = search_engines[engine]
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+        'google': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'bing': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0',
+    'yahoo': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'duckduckgo': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'flickr': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0',
+    'pixabay': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'pexels': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0',
+    'unsplash': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0',
+    'shutterstock': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'yandex': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0'
+      }
 
     response = requests.get(url, headers=headers)
 
@@ -73,6 +87,7 @@ def search_image(query, engine):
         return extractor.get_image_tags()
     else:
         return []
+
 
 @bot1.message_handler(commands=['start'])
 def send_welcome_bot1(message):
