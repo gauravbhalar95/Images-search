@@ -4,13 +4,9 @@ import telebot
 import requests
 from bs4 import BeautifulSoup
 
-# Retrieve API tokens from environment variables
 API_TOKEN_1 = os.getenv('API_TOKEN_1')
-
-# Initialize Telegram bot
 bot1 = telebot.TeleBot(API_TOKEN_1)
 
-# Flask app setup
 app = Flask(__name__)
 
 class ImageExtractor:
@@ -19,50 +15,44 @@ class ImageExtractor:
         self.engine = engine
 
     def get_image_tags(self):
-        image_tags = []
-        if self.engine == 'google':
-            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
-        elif self.engine == 'bing':
-            image_tags = self.soup.find_all('img', {'class': 'mimg'})
-        elif self.engine == 'yahoo':
-            image_tags = self.soup.find_all('img', {'class': 'process'})
-        elif self.engine == 'duckduckgo':
-            image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
-        elif self.engine == 'flickr':
-            image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
-        elif self.engine == 'pixabay':
-            image_tags = self.soup.find_all('img', {'class': 'preview'})
-        elif self.engine == 'pexels':
-            image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
-        elif self.engine == 'unsplash':
-            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
-        elif self.engine == 'shutterstock':
-            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
-        elif self.engine == 'yandex':
-            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
-
         image_urls = []
-        for img in image_tags:
-            image_url = img.get('src') or img.get('data-src')
-            if image_url and len(image_urls) < 100:  # Limit to top 100 images
-                if not image_url.startswith('http'):
-                    image_url = "https:" + image_url
-                image_urls.append(image_url)
+        if self.engine == 'google':
+            for img in self.soup.find_all('img'):
+                url = img.get('src')
+                if url and len(image_urls) < 10:  # Limit to 10 images
+                    image_urls.append(url)
+        elif self.engine == 'bing':
+            for img in self.soup.find_all('img'):
+                url = img.get('src')
+                if url and "w=600" in url:  # Filter for high-quality images
+                    image_urls.append(url)
+                if len(image_urls) >= 10:  # Limit to 10 images
+                    break
+        elif self.engine == 'yahoo':
+            for img in self.soup.find_all('img'):
+                url = img.get('src')
+                if url and len(image_urls) < 10:
+                    image_urls.append(url)
+        elif self.engine == 'duckduckgo':
+            for img in self.soup.find_all('img'):
+                url = img.get('src')
+                if url and len(image_urls) < 10:
+                    image_urls.append(url)
+        elif self.engine == 'yandex':
+            for img in self.soup.find_all('img'):
+                url = img.get('src')
+                if url and len(image_urls) < 10:
+                    image_urls.append(url)
 
         return image_urls
 
 def search_image(query, engine):
     search_engines = {
-        'google': f"https://www.google.com/search?q={query}&tbm=isch",
+        'google': f"https://www.google.com/search?hl=en&tbm=isch&q={query}",
         'bing': f"https://www.bing.com/images/search?q={query}",
         'yahoo': f"https://images.search.yahoo.com/search/images?p={query}",
-        'duckduckgo': f"https://duckduckgo.com/?q={query}&iax=images&ia=images",
-        'flickr': f"https://www.flickr.com/search/?text={query}",
-        'pixabay': f"https://pixabay.com/images/search/{query}/",
-        'pexels': f"https://www.pexels.com/search/{query}/",
-        'unsplash': f"https://unsplash.com/s/photos/{query}",
-        'shutterstock': f"https://www.shutterstock.com/search/images?searchterm={query}",
-        'yandex': f"https://yandex.com/images/search?text={query}"
+        'duckduckgo': f"https://duckduckgo.com/?q={query}&t=h_&iar=images&iax=images&ia=images",
+        'yandex': f"https://yandex.com/images/search?text={query}",
     }
 
     if engine not in search_engines:
@@ -83,23 +73,22 @@ def search_image(query, engine):
 
 @bot1.message_handler(commands=['start'])
 def send_welcome_bot1(message):
-    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, etc., followed by your search query to find images.")
+    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find images.")
 
-@bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'flickr', 'pixabay', 'pexels', 'unsplash', 'shutterstock', 'yandex'])
+@bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'yandex'])
 def image_search(message):
-    command = message.text.split()[0][1:]  # Get the command without '/'
-    query = ' '.join(message.text.split()[1:])  # Get the query
-
+    command = message.text.split()[0][1:]  # Get the engine name
+    query = " ".join(message.text.split()[1:])  # Get the search query
     if not query:
         bot1.reply_to(message, "Please provide a search query.")
         return
 
-    image_urls = search_image(query, command)
-    if image_urls:
-        for url in image_urls:
-            bot1.send_message(message.chat.id, url)
+    images = search_image(query, command)
+    if images:
+        for img in images:
+            bot1.send_message(message.chat.id, img)
     else:
-        bot1.send_message(message.chat.id, "No images found.")
+        bot1.reply_to(message, "No images found.")
 
 @app.route('/' + API_TOKEN_1, methods=['POST'])
 def getMessage_bot1():
@@ -109,11 +98,9 @@ def getMessage_bot1():
 @app.route('/')
 def webhook():
     bot1.remove_webhook()
-    # Set your Flask app's URL directly
-    bot1.set_webhook(url='https://images-search.onrender.com/' + API_TOKEN_1)
+    bot1.set_webhook(url=https://images-search.onrender.com/API_TOKEN_1)
     return "Webhook set", 200
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-  
