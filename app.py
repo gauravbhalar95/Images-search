@@ -19,29 +19,27 @@ class ImageExtractor:
         if self.engine == 'google':
             for img in self.soup.find_all('img'):
                 url = img.get('src')
-                if url and len(image_urls) < 10:  # Limit to 10 images
+                if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
         elif self.engine == 'bing':
             for img in self.soup.find_all('img'):
                 url = img.get('src')
-                if url and "w=600" in url:  # Filter for high-quality images
+                if url and "w=600" in url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
-                if len(image_urls) >= 10:  # Limit to 10 images
-                    break
         elif self.engine == 'yahoo':
             for img in self.soup.find_all('img'):
                 url = img.get('src')
-                if url and len(image_urls) < 10:
+                if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
         elif self.engine == 'duckduckgo':
             for img in self.soup.find_all('img'):
                 url = img.get('src')
-                if url and len(image_urls) < 10:
+                if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
         elif self.engine == 'yandex':
             for img in self.soup.find_all('img'):
                 url = img.get('src')
-                if url and len(image_urls) < 10:
+                if url and not url.startswith('data:image/') and len(image_urls) < 10:
                     image_urls.append(url)
 
         return image_urls
