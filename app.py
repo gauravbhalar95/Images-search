@@ -9,7 +9,7 @@ bot1 = telebot.TeleBot(API_TOKEN_1)
 
 app = Flask(__name__)
 
-class ImageExtractor:
+class HDImageExtractor:
     def __init__(self, html_content, engine):
         self.soup = BeautifulSoup(html_content, 'html.parser')
         self.engine = engine
@@ -39,26 +39,31 @@ class ImageExtractor:
 
         image_urls = []
         for img in image_tags:
-            image_url = img.get('src') or img.get('data-src')
+            # Check for higher quality image attributes
+            image_url = img.get('data-srcset') or img.get('data-src') or img.get('srcset') or img.get('src')
             if image_url and len(image_urls) < 100:  # Limit to top 100 images
+                # Ensure the URL starts with http or https
                 if not image_url.startswith('http'):
                     image_url = "https:" + image_url
+                # Extract HD quality image if possible from srcset
+                if " " in image_url:
+                    image_url = image_url.split(" ")[0]
                 image_urls.append(image_url)
 
         return image_urls
 
 
-def search_image(query, engine):
+def search_hd_image(query, engine):
     search_engines = {
         'google': f"https://www.google.com/search?q={query}&tbm=isch",
-        'bing': f"https://www.bing.com/images/search?q={query}",
+        'bing': f"https://www.bing.com/images/search?q={query}&qft=+filterui:imagesize-large",
         'yahoo': f"https://images.search.yahoo.com/search/images?p={query}",
-        'duckduckgo': f"https://duckduckgo.com/?q={query}&t=h_&iar=images&iax=images&ia=images",
+        'duckduckgo': f"https://duckduckgo.com/?q={query}&iar=images&iax=images&ia=images",
         'flickr': f"https://www.flickr.com/search/?text={query}",
         'pixabay': f"https://pixabay.com/images/search/{query}/",
         'pexels': f"https://www.pexels.com/search/{query}/",
         'unsplash': f"https://unsplash.com/s/photos/{query}",
-        'shutterstock': f"https://www.shutterstock.com/search?searchterm={query}",
+        'shutterstock': f"https://www.shutterstock.com/search/images?searchterm={query}",
         'yandex': f"https://yandex.com/images/search?text={query}"
     }
 
@@ -66,15 +71,14 @@ def search_image(query, engine):
         return []
 
     url = search_engines[engine]
-
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
 
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        extractor = ImageExtractor(response.text, engine)
+        extractor = HDImageExtractor(response.text, engine)
         return extractor.get_image_tags()
     else:
         return []
@@ -82,7 +86,7 @@ def search_image(query, engine):
 
 @bot1.message_handler(commands=['start'])
 def send_welcome_bot1(message):
-    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find images.")
+    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find HD images.")
 
 
 @bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'flickr', 'pixabay', 'pexels', 'unsplash', 'shutterstock', 'yandex'])
@@ -90,13 +94,13 @@ def image_search(message):
     try:
         command = message.text.split(' ', 1)[0][1:]  # Extract the command without '/'
         query = message.text.split(' ', 1)[1]
-        image_urls = search_image(query, command.lower())
+        image_urls = search_hd_image(query, command.lower())
 
         if not image_urls:
             bot1.send_message(message.chat.id, "No images found. Please try a different search query.")
             return
 
-        for img_url in image_urls:
+        for img_url in image_urls[:5]:  # Limit to sending 5 images at a time
             bot1.send_photo(message.chat.id, img_url)
 
     except IndexError:
