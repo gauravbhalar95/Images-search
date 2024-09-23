@@ -3,42 +3,19 @@ from flask import Flask, request
 import telebot
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image
-from io import BytesIO
 
 API_TOKEN_1 = os.getenv('API_TOKEN_1')
 bot1 = telebot.TeleBot(API_TOKEN_1)
 
 app = Flask(__name__)
 
+# Default min width and height
+DEFAULT_MIN_DIMENSION = 720
+
 class HDImageExtractor:
-    def __init__(self, html_content, engine, min_width=None, max_width=None, min_height=None, max_height=None):
+    def __init__(self, html_content, engine):
         self.soup = BeautifulSoup(html_content, 'html.parser')
         self.engine = engine
-        self.min_width = min_width
-        self.max_width = max_width
-        self.min_height = min_height
-        self.max_height = max_height
-
-    def image_fits_size(self, image_url):
-        try:
-            response = requests.get(image_url)
-            img = Image.open(BytesIO(response.content))
-            width, height = img.size
-
-            if self.min_width and width < self.min_width:
-                return False
-            if self.max_width and width > self.max_width:
-                return False
-            if self.min_height and height < self.min_height:
-                return False
-            if self.max_height and height > self.max_height:
-                return False
-
-            return True
-        except Exception as e:
-            print(f"Error fetching image size: {e}")
-            return False
 
     def get_image_tags(self):
         image_tags = []
@@ -65,23 +42,39 @@ class HDImageExtractor:
 
         image_urls = []
         for img in image_tags:
+            # Check for higher quality image attributes
             image_url = img.get('data-srcset') or img.get('data-src') or img.get('srcset') or img.get('src')
             if image_url:
+                # Ensure the URL starts with http or https
                 if not image_url.startswith('http'):
                     image_url = "https:" + image_url
+                # Extract HD quality image if possible from srcset
                 if " " in image_url:
                     image_url = image_url.split(" ")[0]
 
-                # Check image size if the constraints are set
-                if self.image_fits_size(image_url):
+                # Filter based on default dimension (greater than 720px)
+                try:
+                    width, height = self.get_image_dimensions(img)
+                    if width >= DEFAULT_MIN_DIMENSION and height >= DEFAULT_MIN_DIMENSION:
+                        image_urls.append(image_url)
+                except ValueError:
+                    # If dimensions are not found, add the image URL anyway
                     image_urls.append(image_url)
-
-            if len(image_urls) >= 100:  # Limit to top 100 images
-                break
 
         return image_urls
 
-def search_hd_image(query, engine, min_width=None, max_width=None, min_height=None, max_height=None):
+    def get_image_dimensions(self, img):
+        """Extract width and height from the image tag."""
+        width = img.get('width') or img.get('data-width')
+        height = img.get('height') or img.get('data-height')
+
+        if width and height:
+            return int(width), int(height)
+        else:
+            raise ValueError("Dimensions not found")
+
+
+def search_hd_image(query, engine):
     search_engines = {
         'google': f"https://www.google.com/search?q={query}&tbm=isch",
         'bing': f"https://www.bing.com/images/search?q={query}&qft=+filterui:imagesize-large",
@@ -106,35 +99,23 @@ def search_hd_image(query, engine, min_width=None, max_width=None, min_height=No
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        extractor = HDImageExtractor(response.text, engine, min_width, max_width, min_height, max_height)
+        extractor = HDImageExtractor(response.text, engine)
         return extractor.get_image_tags()
     else:
         return []
 
+
 @bot1.message_handler(commands=['start'])
 def send_welcome_bot1(message):
-    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find HD images. Optionally, you can add size constraints in the format `min_width,max_width,min_height,max_height`.")
+    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, or /yandex followed by your search query to find HD images.")
+
 
 @bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'flickr', 'pixabay', 'pexels', 'unsplash', 'shutterstock', 'yandex'])
 def image_search(message):
     try:
-        # Extract the command and query
         command = message.text.split(' ', 1)[0][1:]  # Extract the command without '/'
-        args = message.text.split(' ', 2)
-
-        query = args[1]
-        size_constraints = None
-
-        if len(args) > 2:
-            size_constraints = args[2].split(',')
-
-        # Handle size constraints
-        min_width = int(size_constraints[0]) if size_constraints and len(size_constraints) >= 1 else None
-        max_width = int(size_constraints[1]) if size_constraints and len(size_constraints) >= 2 else None
-        min_height = int(size_constraints[2]) if size_constraints and len(size_constraints) >= 3 else None
-        max_height = int(size_constraints[3]) if size_constraints and len(size_constraints) >= 4 else None
-
-        image_urls = search_hd_image(query, command.lower(), min_width, max_width, min_height, max_height)
+        query = message.text.split(' ', 1)[1]
+        image_urls = search_hd_image(query, command.lower())
 
         if not image_urls:
             bot1.send_message(message.chat.id, "No images found. Please try a different search query.")
@@ -148,16 +129,19 @@ def image_search(message):
     except Exception as e:
         bot1.send_message(message.chat.id, f"An error occurred: {str(e)}")
 
+
 @app.route('/' + API_TOKEN_1, methods=['POST'])
 def getMessage_bot1():
     bot1.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "!", 200
+
 
 @app.route('/')
 def webhook():
     bot1.remove_webhook()
     bot1.set_webhook(url=f'https://images-search.onrender.com/{API_TOKEN_1}', timeout=60)
     return "Webhook set", 200
+
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
