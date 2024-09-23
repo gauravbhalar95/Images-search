@@ -10,7 +10,7 @@ bot1 = telebot.TeleBot(API_TOKEN_1)
 app = Flask(__name__)
 
 class ImageExtractor:
-    def __init__(self, html_content, engine):
+    def __init__(self, html_content, engine):
         self.soup = BeautifulSoup(html_content, 'html.parser')
         self.engine = engine
 
