@@ -139,9 +139,8 @@ def getMessage_bot1():
 @app.route('/')
 def webhook():
     bot1.remove_webhook()
-    bot1.set_webhook(url=f'https://images-search.onrender.com/{API_TOKEN_1}', timeout=60)
+    bot1.set_webhook(url=os.getenv('KOYEB_URL') + '/' + API_TOKEN_1, timeout=60)
     return "Webhook set", 200
-
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
