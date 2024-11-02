@@ -24,9 +24,9 @@ class HDImageExtractor:
         image_urls = []
         
         if self.engine == 'google':
-            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
+            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
         elif self.engine == 'bing':
-            for div in self.soup.find_all('div', {'class': 'iusc'}):
+            for div in self.soup.find_all('div', {'class': 'mimg'}):
                 image_info = div.get('m')
                 if image_info:
                     image_data = json.loads(image_info)
