@@ -15,56 +15,44 @@ app = Flask(__name__)
 # Default min width and height
 DEFAULT_MIN_DIMENSION = 720
 
-class HDImageExtractor:
-    def __init__(self, html_content, engine):
-        self.soup = BeautifulSoup(html_content, 'html.parser')
-        self.engine = engine
+class ImageExtractor:
+    def __init__(self, html_content, engine):
+        self.soup = BeautifulSoup(html_content, 'html.parser')
+        self.engine = engine
 
-    def get_image_tags(self):
-        image_urls = []
-        
-        if self.engine == 'google':
-            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
-        elif self.engine == 'bing':
-            for div in self.soup.find_all('div', {'class': 'mimg'}):
-                image_info = div.get('m')
-                if image_info:
-                    image_data = json.loads(image_info)
-                    image_url = image_data.get('murl')  # Get the URL from the 'murl' field
-                    if image_url:
-                        image_urls.append(image_url)
-        elif self.engine == 'yahoo':
-            image_tags = self.soup.find_all('img', {'class': 'process'})
-        elif self.engine == 'duckduckgo':
-            image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
-        elif self.engine == 'flickr':
-            image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
-        elif self.engine == 'pixabay':
-            image_tags = self.soup.find_all('img', {'class': 'preview'})
-        elif self.engine == 'pexels':
-            image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
-        elif self.engine == 'unsplash':
-            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
-        elif self.engine == 'shutterstock':
-            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
-        elif self.engine == 'yandex':
-            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
+    def get_image_tags(self):
+        image_tags = []
+        if self.engine == 'google':
+            image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
+        elif self.engine == 'bing':
+            image_tags = self.soup.find_all('img', {'class': 'mimg'})
+        elif self.engine == 'yahoo':
+            image_tags = self.soup.find_all('img', {'class': 'process'})
+        elif self.engine == 'duckduckgo':
+            image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
+        elif self.engine == 'flickr':
+            image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
+        elif self.engine == 'pixabay':
+            image_tags = self.soup.find_all('img', {'class': 'preview'})
+        elif self.engine == 'pexels':
+            image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
+        elif self.engine == 'unsplash':
+            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
+        elif self.engine == 'shutterstock':
+            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
+        elif self.engine == 'yandex':
+            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
 
-        for img in image_tags:
-            image_url = img.get('data-srcset') or img.get('data-src') or img.get('srcset') or img.get('src')
-            if image_url:
-                if not image_url.startswith('http'):
-                    image_url = "https:" + image_url
-                if " " in image_url:
-                    image_url = image_url.split(" ")[0]
-                try:
-                    width, height = self.get_image_dimensions(img)
-                    if width >= DEFAULT_MIN_DIMENSION and height >= DEFAULT_MIN_DIMENSION:
-                        image_urls.append(image_url)
-                except ValueError:
-                    image_urls.append(image_url)
-        
-        return image_urls
+        image_urls = []
+        for img in image_tags:
+            image_url = img.get('src') or img.get('data-src')
+            if image_url and len(image_urls) < 100:  # Limit to top 100 images
+                if not image_url.startswith('http'):
+                    image_url = "https:" + image_url
+                image_urls.append(image_url)
+
+        return image_urls
+
 
     def get_image_dimensions(self, img):
         """Extract width and height from the image tag."""
