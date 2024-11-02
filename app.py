@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, request
 import telebot
 import requests
@@ -20,28 +21,35 @@ class HDImageExtractor:
         self.engine = engine
 
     def get_image_tags(self):
-        image_tags = []
+        image_urls = []
+        
         if self.engine == 'google':
             image_tags = self.soup.find_all('img', {'class': 'rg_i Q4LuWd'})
         elif self.engine == 'bing':
-            image_tags = self.soup.find_all('img', {'class': 'mimg'})
+            for div in self.soup.find_all('div', {'class': 'iusc'}):
+                image_info = div.get('m')
+                if image_info:
+                    image_data = json.loads(image_info)
+                    image_url = image_data.get('murl')  # Get the URL from the 'murl' field
+                    if image_url:
+                        image_urls.append(image_url)
         elif self.engine == 'yahoo':
             image_tags = self.soup.find_all('img', {'class': 'process'})
         elif self.engine == 'duckduckgo':
             image_tags = self.soup.find_all('img', {'class': 'tile--img__img'})
-        elif self.engine == 'baidu':
-            image_tags = self.soup.find_all('img', {'class': 'main_img'})
-        elif self.engine == 'pinterest':
-            image_tags = self.soup.find_all('img', {'class': 'GrowthUnauthPinImage'})
         elif self.engine == 'flickr':
             image_tags = self.soup.find_all('img', {'class': 'photo-list-photo-view'})
-        elif self.engine == 'unsplash':
-            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
+        elif self.engine == 'pixabay':
+            image_tags = self.soup.find_all('img', {'class': 'preview'})
         elif self.engine == 'pexels':
             image_tags = self.soup.find_all('img', {'class': 'photo-item__img'})
-        # Add more engines here as necessary...
+        elif self.engine == 'unsplash':
+            image_tags = self.soup.find_all('img', {'class': 'YVj9w'})
+        elif self.engine == 'shutterstock':
+            image_tags = self.soup.find_all('img', {'class': 'z_h_8iJ6'})
+        elif self.engine == 'yandex':
+            image_tags = self.soup.find_all('img', {'class': 'serp-item__thumb justifier__thumb'})
 
-        image_urls = []
         for img in image_tags:
             image_url = img.get('data-srcset') or img.get('data-src') or img.get('srcset') or img.get('src')
             if image_url:
@@ -55,6 +63,7 @@ class HDImageExtractor:
                         image_urls.append(image_url)
                 except ValueError:
                     image_urls.append(image_url)
+        
         return image_urls
 
     def get_image_dimensions(self, img):
@@ -67,18 +76,19 @@ class HDImageExtractor:
         else:
             raise ValueError("Dimensions not found")
 
+
 def search_hd_image(query, engine):
     search_engines = {
         'google': f"https://www.google.com/search?q={query}&tbm=isch",
         'bing': f"https://www.bing.com/images/search?q={query}&qft=+filterui:imagesize-large",
         'yahoo': f"https://images.search.yahoo.com/search/images?p={query}",
-        'duckduckgo': f"https://duckduckgo.com/?q={query}&t=images",
-        'baidu': f"https://image.baidu.com/search/index?tn=baiduimage&word={query}",
-        'pinterest': f"https://www.pinterest.com/search/pins/?q={query}",
+        'duckduckgo': f"https://duckduckgo.com/?q={query}&iar=images&iax=images&ia=images",
         'flickr': f"https://www.flickr.com/search/?text={query}",
-        'unsplash': f"https://unsplash.com/s/photos/{query}",
+        'pixabay': f"https://pixabay.com/images/search/{query}/",
         'pexels': f"https://www.pexels.com/search/{query}/",
-        # Add more engines here...
+        'unsplash': f"https://unsplash.com/s/photos/{query}",
+        'shutterstock': f"https://www.shutterstock.com/search/images?searchterm={query}",
+        'yandex': f"https://yandex.com/images/search?text={query}"
     }
 
     if engine not in search_engines:
@@ -97,18 +107,19 @@ def search_hd_image(query, engine):
     else:
         return []
 
+
 @bot1.message_handler(commands=['start'])
 def send_welcome_bot1(message):
-    bot1.reply_to(message, "Welcome! Use /search_google, /search_bing, /search_yahoo, /search_duckduckgo, /search_baidu, /search_pinterest, /search_flickr, /search_unsplash, or /search_pexels followed by your search query to find HD images.")
+    bot1.reply_to(message, "Welcome! Use /google, /bing, /yahoo, /duckduckgo, /flickr, /pixabay, /pexels, /unsplash, or /shutterstock followed by your search query to find HD images.")
 
-@bot1.message_handler(commands=['search_google', 'search_bing', 'search_yahoo', 'search_duckduckgo', 'search_baidu', 'search_pinterest', 'search_flickr', 'search_unsplash', 'search_pexels'])
+
+@bot1.message_handler(commands=['google', 'bing', 'yahoo', 'duckduckgo', 'flickr', 'pixabay', 'pexels', 'unsplash', 'shutterstock', 'yandex'])
 def image_search(message):
     try:
-        command = message.text.split(' ', 1)[0][7:]  # Extract the engine command without '/search_'
+        command = message.text.split(' ', 1)[0][1:]  # Extract the command without '/'
         query = message.text.split(' ', 1)[1]
-        
         image_urls = search_hd_image(query, command.lower())
-        
+
         if not image_urls:
             bot1.send_message(message.chat.id, "No images found. Please try a different search query.")
             return
@@ -121,6 +132,7 @@ def image_search(message):
     except Exception as e:
         bot1.send_message(message.chat.id, f"An error occurred: {str(e)}")
 
+
 @app.route('/' + API_TOKEN_1, methods=['POST'])
 def getMessage_bot1():
     try:
@@ -130,6 +142,7 @@ def getMessage_bot1():
     except Exception as e:
         print(f"Error processing update: {e}")
     return "!", 200
+
 
 @app.route('/')
 def webhook():
@@ -141,9 +154,11 @@ def webhook():
         print("Failed to set webhook")
         return "Webhook setup failed", 500
 
+
 @app.route('/test')
 def test():
     return "Server is running", 200
+
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
